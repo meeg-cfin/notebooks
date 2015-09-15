@@ -2,6 +2,8 @@ from IPython.html import widgets
 from IPython.html.widgets import interact
 from IPython.display import display
 
+from mne.io import Raw
+
 class FakeDatabaseQuery():
     def __init__(self):
         raise NotImplementedError('Would be usefull for debugging, though...')
@@ -14,7 +16,8 @@ class InteractiveQuery():
         else:
             self.query = query
             
-        self.info = dict(subj_id=None, modality=None, study=None, 
+        self.info = dict(proj_code=query.proj_code,
+                         subj_id=None, modality=None, study=None, 
                          series=None, series_name=None, files=None)
 
         self.subj_dd  = widgets.Dropdown(options=['']+self.query.get_subjects(), description='Subject ID')
@@ -77,3 +80,71 @@ class InteractiveQuery():
         display(self.files_list)
         
         
+class InteractiveMaxfilter():
+
+    def __init__(self, input_info, mf_object):
+
+        self.output_dir = '/projects/' + input_info['proj_code'] + '/scratch/maxfilter'
+        self.info = input_info
+        self.mf = mf_object
+        
+        self.bccont = widgets.Box(description='Bad chans')
+        self.autobad  = widgets.Dropdown(options=['on','off'], description='Autobad')
+        self.badchans = widgets.Textarea(description="Bad channels")
+        self.bccont.children = [self.autobad, self.badchans]
+
+        self.ssscont = widgets.Box(description='(t)SSS')
+        self.st = widgets.Checkbox(description='Use temporal SSS (tSSS)')
+        self.stcorr = widgets.FloatSlider(value=0.96, min=0.5, max=0.99, step=0.01,
+                                     description='Correlation limit')
+        self.stbuflen = widgets.IntSlider(value=16, min=4, max=30, description='Buffer length')
+        self.sssframe = widgets.Dropdown(options=['head','device'], description='SSS frame')
+        self.ssscont.children = [self.sssframe, self.st, self.stcorr, self.stbuflen]
+
+        self.mccont = widgets.Box(description='Movement compensation')
+        self.mc = widgets.Checkbox(description='Active')
+        self.mctarget = widgets.Dropdown(options=['initial'] + self.info['files'],
+                                    description='Compensate to')
+        self.mccont.children = [self.mc, self.mctarget]
+
+        self.hscont = widgets.Box(description='Head shape (fit)')
+
+        self.fitbut = widgets.Button(description='Fit sphere to head shape')
+        self.fitylim = widgets.FloatRangeSlider(value=(-120., 120.), min=-120., max=120., step=2.,
+                                          description="y-limit of head shape points")
+        self.fitzlim = widgets.FloatRangeSlider(value=(-60., 120.), min=-60., max=120., step=2.,
+                                          description="z-limit of head shape points")
+        self.fitorigin = widgets.Text(value='', description='Origin', width=250)
+        self.hscont.children = [self.fitbut, self.fitylim, self.fitzlim, self.fitorigin]
+
+        # Event handlers
+        self.sssframe.on_trait_change(self.on_frame_changed)
+        self.fitbut.on_click(self.on_fitbut_clicked)
+
+
+        self.accordion = widgets.Accordion(children=[self.bccont, self.ssscont, 
+                                                     self.mccont, self.hscont])
+        self.accordion.set_title(0, 'Bad channels')
+        self.accordion.set_title(1, '(t)SSS parameters')
+        self.accordion.set_title(2, 'Movement compensation')
+        self.accordion.set_title(3, 'Head origin')
+        
+    def on_frame_changed(self):
+        self.fitorigin.value = 'None'
+
+    def on_fitbut_clicked(self, b):
+
+        raw = Raw(self.info['files'][0], verbose=False)
+        r, o_head, o_dev = \
+            self.mf.fit_sphere_to_headshape(raw.info, ylim=self.fitylim.value, 
+                                            zlim=self.fitzlim.value)
+
+        #     o_head, o_dev = [0.,0.,40.], [0.,0.,0.]
+
+        if self.sssframe.value == 'head':
+            self.fitorigin.value = "{:.1f} {:.1f} {:.1f}".format(*o_head)
+        elif self.sssframe.value == 'device':
+            self.fitorigin.value = "{:.1f} {:.1f} {:.1f}".format(*o_dev)
+
+    def display(self):
+        display(self.accordion)
