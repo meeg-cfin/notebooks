@@ -1,6 +1,7 @@
 from IPython.html import widgets
 from IPython.html.widgets import interact
 from IPython.display import display
+import warnings
 
 from mne.io import Raw
 
@@ -87,6 +88,7 @@ class InteractiveMaxfilter():
         self.output_dir = '/projects/' + input_info['proj_code'] + '/scratch/maxfilter'
         self.info = input_info
         self.mf = mf_object
+        self.raw_file = None
         
         self.bccont = widgets.Box(description='Bad chans')
         self.autobad  = widgets.Dropdown(options=['on','off'], description='Autobad')
@@ -134,12 +136,19 @@ class InteractiveMaxfilter():
 
     def on_fitbut_clicked(self, b):
 
-        raw = Raw(self.info['files'][0], verbose=False)
-        r, o_head, o_dev = \
-            self.mf.fit_sphere_to_headshape(raw.info, ylim=self.fitylim.value, 
-                                            zlim=self.fitzlim.value)
+        if self.raw_file is None:
+            # To temporarily suppress the stupid MNE warning about
+            # "wrong" file name suffixes (irritating!) while reading Raw
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                self.raw_file = Raw(self.info['files'][0], verbose=False)
 
-        #     o_head, o_dev = [0.,0.,40.], [0.,0.,0.]
+        limits_y_m = tuple(val/1000. for val in self.fitylim.value)
+        limits_z_m = tuple(val/1000. for val in self.fitzlim.value)
+        r, o_head, o_dev = \
+            self.mf.fit_sphere_to_headshape(self.raw_file.info, 
+                                            ylim=limits_y_m, 
+                                            zlim=limits_z_m)
 
         if self.sssframe.value == 'head':
             self.fitorigin.value = "{:.1f} {:.1f} {:.1f}".format(*o_head)
