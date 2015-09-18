@@ -89,6 +89,12 @@ class InteractiveMaxfilter():
         self.info = input_info
         self.mf = mf_object
         self.raw_file = None
+
+        self.initialise_mf_params()
+        # self.show_cmd = widgets.Textarea(description="Command", disabled=True, visible=True)
+
+        self.buildcmdbut = widgets.Button(description='Build command')
+        self.buildcmdbut.on_click(self.on_buildcmdbut_clicked)
         
         self.bccont = widgets.Box(description='Bad chans')
         self.autobad  = widgets.Dropdown(options=['on','off'], description='Autobad')
@@ -130,7 +136,7 @@ class InteractiveMaxfilter():
         self.accordion.set_title(1, '(t)SSS parameters')
         self.accordion.set_title(2, 'Movement compensation')
         self.accordion.set_title(3, 'Head origin')
-        
+                
     def on_frame_changed(self):
         self.fitorigin.value = 'None'
 
@@ -155,5 +161,26 @@ class InteractiveMaxfilter():
         elif self.sssframe.value == 'device':
             self.fitorigin.value = "{:.1f} {:.1f} {:.1f}".format(*o_dev)
 
+    def on_buildcmdbut_clicked(self, b):
+        self.collect_mf_params()
+        self.mf.build_maxfilter_cmd('foo','bar', **self.mf_params)
+        print(self.mf.cmd)
+        
+    ## TODO:
+    def collect_mf_params(self):
+        self.mf_params['origin'] = self.fitorigin.value
+        # etc.
+
+    def initialise_mf_params(self):
+        self.mf_params = dict(origin='0 0 40', frame='head',
+                        bad=None, autobad='off', skip=None, force=False,
+                        st=False, st_buflen=16.0, st_corr=0.96, mv_trans=None,
+                        movecomp=False, mv_headpos=False, mv_hp=None,
+                        mv_hpistep=None, mv_hpisubt=None, hpicons=True,
+                        linefreq=None, cal=None, ctc=None, mx_args='',
+                        maxfilter_bin='maxfilter', logfile=None,
+                        n_threads=None)
+        
     def display(self):
         display(self.accordion)
+        display(self.buildcmdbut)
