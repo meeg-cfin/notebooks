@@ -144,7 +144,7 @@ class InteractiveMaxfilter():
         self.fitorigin = widgets.Text(value='', description='Origin', width=250)
         self.hscont.children = [self.fitbut, self.fitylim, self.fitzlim, self.fitorigin]
 
-        self. = widgets.HBox(description='')
+        # self. = widgets.HBox(description='')
         self.mc = widgets.Checkbox(description='Active')
         self.mctarget = widgets.Dropdown(
                     options={'initial': '', 'default': 'default'},
