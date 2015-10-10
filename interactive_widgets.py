@@ -196,11 +196,11 @@ class InteractiveMaxfilter():
         self.mf_params['frame'] = self.sssframe.value
         self.mf_params['bad'] = self.badchans.value
         self.mf_params['autobad'] = self.autobad.value
-        self.mf_params['st'] = self.ssscont.value
+        self.mf_params['st'] = self.st.value
         self.mf_params['st_buflen'] = self.stbuflen.value
         self.mf_params['st_corr'] = self.stcorr.value
         self.mf_params['movecomp'] = self.mc.value
-        self.mf_params['mv_trans'] = if self.mctarget.value
+        self.mf_params['mv_trans'] = self.mctarget.value
 
     def initialise_mf_params(self):
         self.mf_params = dict(origin='0 0 40', frame='head',
