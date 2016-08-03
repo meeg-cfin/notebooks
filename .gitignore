@@ -58,3 +58,6 @@ target/
 
 # Jupyter notebooks
 .ipynb_checkpoints
+
+# cluster wrapper scripts
+py-wrapper*
